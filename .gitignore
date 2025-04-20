@@ -3,3 +3,4 @@ venv-local-rag/
 sandbox/
 .idea/
 .vscode/
+data_prep/outputs/

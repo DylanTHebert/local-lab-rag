@@ -1,0 +1,5 @@
+dataprep:
+    input_dir: F:\data\terms-service\text
+    output_dir: /data/text_datasets/terms_service
+    embedding:
+        _target_: homelab_rag.models.embeddings.localLlama1B
