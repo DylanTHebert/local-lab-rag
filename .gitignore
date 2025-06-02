@@ -4,3 +4,5 @@ sandbox/
 .idea/
 .vscode/
 data_prep/outputs/
+*.pyc
+outputs/
