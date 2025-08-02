@@ -1,5 +1,7 @@
 dataprep:
-    input_dir: F:\data\terms-service\text
-    output_dir: /data/text_datasets/terms_service
+    source: F:\data\terms-service\text
+    dest: /data/text_datasets/terms_service
     embedding:
         _target_: homelab_rag.models.embeddings.localLlama1B
+    is_remote: True
+    force_resave: True

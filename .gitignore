@@ -6,3 +6,4 @@ sandbox/
 data_prep/outputs/
 *.pyc
 outputs/
+tests/resources/text/
