@@ -32,14 +32,16 @@ class IngestionService:
         while True:
             if self.stop:
                 break
-
             if all([not i.has_next() for i in self.ingestion_sources]):
                 self.is_empty = all(
                     [not i.gather_samples() for i in self.ingestion_sources]
                 )
             for source in self.ingestion_sources:
                 if source.has_next():
-                    self.ingest(self.batcher(source))
+                    batch = self.batcher(source)
+                    removed = set([i["source_path"] for i in batch])
+                    self.ingest(batch)
+                    source.remove_candidates(removed)
         time.sleep(10)
 
     def batcher(self, source: DataIngestionSource):
@@ -51,12 +53,13 @@ class IngestionService:
         batch = defaultdict(list)
         for i in range(samps_to_grab):
             samp = source.grab_sample()
-            for i, j in samp.keys():
+            for i, j in samp.items():
                 batch[i].append(j)
         return batch
 
     def ingest(self, data: Dict[str, Any]) -> None:
         """This iters keys and adds them to the datastore"""
+        # TODO this is where i am
         pass
 
     def stop(self):

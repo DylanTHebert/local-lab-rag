@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+import os
 from typing import Any, Dict, List, Optional
 from llama_index.readers.file import FlatReader
 from llama_index.core.node_parser import TokenTextSplitter
@@ -38,6 +39,15 @@ class DataIngestionSource(ABC):
     def __len__(self) -> int:
         pass
 
+    @abstractmethod
+    def remove_candidates(self, items: set):
+        """set of items that can be removed if there are no more instances of it in the samples
+
+        Args:
+            items: candidate items for removal
+        """
+        pass
+
 
 class TextIngestionSource(DataIngestionSource):
     def __init__(
@@ -65,6 +75,8 @@ class TextIngestionSource(DataIngestionSource):
                 "start_idx": samp.start_char_idx,
                 "end_idx": samp.end_char_idx,
                 "embedding": self.embedder(samp.text),
+                "filename": samp.metadata["filename"],
+                "source_path": samp.metadata["source_path"],
             }
             return prep
         else:
@@ -73,8 +85,14 @@ class TextIngestionSource(DataIngestionSource):
     def gather_samples(self) -> bool:
         queried = self.source_dir.rglob("*.txt")
         docs = []
+        fpaths = []
         for q in queried:
-            docs.extend(FlatReader().load_data(q))
+            fpaths.append(os.path.join(self.source_dir, q))
+            doc = FlatReader().load_data(q)
+            # Optionally, attach metadata to each doc before splitting
+            for d in doc:
+                d.metadata = {"filename": q.name, "source_path": str(q)}
+            docs.extend(doc)
         if len(docs) > 0:
             splitter = TokenTextSplitter(
                 chunk_size=512,
@@ -84,6 +102,18 @@ class TextIngestionSource(DataIngestionSource):
             nodes = splitter.get_nodes_from_documents(docs)
             self.samples.extend(nodes)
         return len(self.samples) > 0
+
+    def remove_candidates(self, items: set):
+        """set of items that can be removed if there are no more instances of it in the samples
+
+        Args:
+            items: candidate items for removal
+        """
+        items_in_samp = set([i.metadata["source_path"] for i in self.samples])
+        diff_items = items.difference(items_in_samp)
+        for i in diff_items:
+            if os.path.exists(i):
+                os.remove(i)
 
     def __len__(self) -> int:
         return len(self.samples)
